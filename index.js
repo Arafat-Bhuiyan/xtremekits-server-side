@@ -1,7 +1,7 @@
 const express = require("express");
 const cors = require("cors");
 require("dotenv").config();
-const { MongoClient, ServerApiVersion } = require("mongodb");
+const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
 const app = express();
 const port = process.env.PORT || 5000;
 
@@ -25,6 +25,65 @@ async function run() {
   try {
     // Connect the client to the server	(optional starting in v4.7)
     await client.connect();
+
+    const itemCollection = client.db("itemDB").collection("item");
+
+    app.get("/item", async (req, res) => {
+      const cursor = itemCollection.find().limit(6);
+      const result = await cursor.toArray();
+      res.send(result);
+    });
+
+    // all item
+    app.get("/all-item", async (req, res) => {
+      const cursor = itemCollection.find();
+      const result = await cursor.toArray();
+      res.send(result);
+    });
+
+    app.get("/item/:id", async (req, res) => {
+      const id = req.params.id;
+      const qurey = { _id: new ObjectId(id) };
+      const result = await itemCollection.findOne(qurey);
+      res.send(result);
+    });
+
+    app.post("/item", async (req, res) => {
+      const newItem = req.body;
+      console.log(newItem);
+      const result = await itemCollection.insertOne(newItem);
+      res.send(result);
+    });
+
+    app.put("/item/:id", async (req, res) => {
+      const id = req.params.id;
+      const filter = { _id: new ObjectId(id) };
+      const option = { upsert: true };
+      const updatedItem = req.body;
+
+      const item = {
+        $set: {
+          name: updatedItem.name,
+          category: updatedItem.category,
+          description: updatedItem.description,
+          price: updatedItem.price,
+          rating: updatedItem.rating,
+          stock: updatedItem.stock,
+          imageurl: updatedItem.imageurl,
+        },
+      };
+
+      const result = await itemCollection.updateOne(filter, item, option);
+      res.send(result);
+    });
+
+    app.delete("/item/:id", async (req, res) => {
+      const id = req.params.id;
+      const query = { _id: new ObjectId(id) };
+      const result = await itemCollection.deleteOne(query);
+      res.send(result);
+    });
+
     // Send a ping to confirm a successful connection
     await client.db("admin").command({ ping: 1 });
     console.log(
