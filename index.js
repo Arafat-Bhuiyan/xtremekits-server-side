@@ -27,6 +27,7 @@ async function run() {
     await client.connect();
 
     const itemCollection = client.db("itemDB").collection("item");
+    const userCollection = client.db("itemDB").collection("users");
 
     app.get("/item", async (req, res) => {
       const cursor = itemCollection.find().limit(6);
@@ -81,6 +82,32 @@ async function run() {
       const id = req.params.id;
       const query = { _id: new ObjectId(id) };
       const result = await itemCollection.deleteOne(query);
+      res.send(result);
+    });
+
+    // Users related apis
+    app.get("/users", async (req, res) => {
+      const cursor = userCollection.find();
+      const result = await cursor.toArray();
+      res.send(result);
+    });
+
+    app.post("/users", async (req, res) => {
+      const newUser = req.body;
+      console.log("Creating new user", newUser);
+      const result = await userCollection.insertOne(newUser);
+      res.send(newUser);
+    });
+
+    app.patch("/users", async (req, res) => {
+      const email = req.body.email;
+      const filter = { email };
+      const updatedDoc = {
+        $set: {
+          lastLogInTime: req.body?.lastLogInTime,
+        },
+      };
+      const result = await userCollection.updateOne(filter, updatedDoc);
       res.send(result);
     });
 
